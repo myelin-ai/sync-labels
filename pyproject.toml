@@ -2,7 +2,7 @@
 name = "myelin-sync-labels"
 version = "0.1.0"
 description = ""
-authors = ["Ruben Schmidmeister <ruben.schmidmeister@icloud.com>"]
+authors = ["Ruben Schmidmeister <ruben@myelin.ch>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
