@@ -1,7 +1,5 @@
 token = "<GITHUB_TOKEN>"
-
 source_repository = "foo/bar"
-
 target_repositories = [
   "foo/baz",
 ]
