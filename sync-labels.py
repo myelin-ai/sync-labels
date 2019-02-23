@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Union
 import logging
 
+
 @dataclass()
 class Config:
     token: str
@@ -19,13 +20,13 @@ class Config:
 
 
 def sync_labels(config: Config):
-    g = Github(config.token)
+    github_client = Github(config.token)
 
-    source_labels = g.get_repo(
+    source_labels = github_client.get_repo(
         config.source_repository, lazy=True).get_labels()
 
     for repository_name in config.target_repositories:
-        repository = g.get_repo(repository_name, lazy=True)
+        repository = github_client.get_repo(repository_name, lazy=True)
 
         logging.info(f'Syncing labels to {repository_name}')
 
