@@ -5,11 +5,13 @@ from github.GithubObject import NotSet
 from github.Repository import Repository
 from github.Label import Label
 from github.GithubException import UnknownObjectException
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import toml
 import os
 from dataclasses import dataclass
 from typing import List, Optional, Union
 import logging
+import multiprocessing
 
 
 @dataclass()
@@ -22,24 +24,37 @@ class Config:
 def sync_labels(config: Config):
     github_client = Github(config.token)
 
-    source_labels = github_client.get_repo(
-        config.source_repository, lazy=True).get_labels()
+    source_labels = [*github_client.get_repo(
+        config.source_repository, lazy=True).get_labels()]
 
-    for repository_name in config.target_repositories:
-        repository = github_client.get_repo(repository_name, lazy=True)
+    worker_count = len(config.target_repositories)
+    with ThreadPoolExecutor(max_workers=worker_count) as executor:
+        futures = [executor.submit(_sync_labels_to_repository,
+                                   github_client, source_labels, repository) for repository in config.target_repositories]
+        for future in as_completed(futures):
+            try:
+                future.result()
+            except Exception as exception:
+                print(f'Error trying to sync labels: {exception}')
 
-        logging.info(f'Syncing labels to {repository_name}')
 
-        for source_label in source_labels:
-            target_label = _get_label_by_name(repository, source_label.name)
-            label_description = _get_label_description(source_label)
+def _sync_labels_to_repository(github_client: Github, source_labels: List[Label], target_repository_name: str):
+    repository = github_client.get_repo(target_repository_name, lazy=True)
 
-            if target_label is None:
-                logging.info(f'Creating new label "{source_label.name}" in {repository_name}')
-                repository.create_label(source_label.name, source_label.color, label_description)
-            else:
-                logging.info(f'Updating existing label "{source_label.name}" in {repository_name}')
-                target_label.edit(source_label.name, source_label.color, label_description)
+    for source_label in source_labels:
+        target_label = _get_label_by_name(repository, source_label.name)
+        label_description = _get_label_description(source_label)
+
+        if target_label is None:
+            logging.info(
+                f'Creating new label "{source_label.name}" in {target_repository_name}')
+            repository.create_label(
+                source_label.name, source_label.color, label_description)
+        else:
+            logging.info(
+                f'Updating existing label "{source_label.name}" in {target_repository_name}')
+            target_label.edit(source_label.name,
+                              source_label.color, label_description)
 
 
 def _get_label_description(label: Label) -> Union[str, type(NotSet)]:
