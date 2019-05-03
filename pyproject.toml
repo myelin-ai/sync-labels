@@ -6,7 +6,7 @@ authors = ["Ruben Schmidmeister <ruben@myelin.ch>"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-PyGithub = "^1.43"
+PyGithub = { git = "https://github.com/phako/PyGithub.git", branch = "master" }
 toml = "^0.10.0"
 
 [tool.poetry.dev-dependencies]
